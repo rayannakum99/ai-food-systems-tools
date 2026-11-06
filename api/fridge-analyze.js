@@ -1,14 +1,13 @@
 // Runs on Google Gemini's free tier.
 
-const MODEL = 'gemini-2.5-flash';
+const MODEL = 'gemini-3.1-flash-lite';
 
 async function askGemini(parts, systemText) {
   const body = {
     contents: [{ role: 'user', parts }],
     generationConfig: {
       responseMimeType: 'application/json',
-      maxOutputTokens: 4096,
-      thinkingConfig: { thinkingBudget: 0 }
+      maxOutputTokens: 8192
     }
   };
   if (systemText) body.systemInstruction = { parts: [{ text: systemText }] };
