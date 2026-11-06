@@ -1,0 +1,10 @@
+{
+  "cleanUrls": true,
+  "redirects": [
+    {
+      "source": "/",
+      "destination": "https://www.rayannakum.co.uk/#systems",
+      "permanent": false
+    }
+  ]
+}

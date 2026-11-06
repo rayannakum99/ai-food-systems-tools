@@ -1,0 +1,568 @@
+<!-- Copyright 2026 Rayan Nakum. rayannakum.co.uk. All rights reserved. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Recipe Budget Scorer | Rayan Nakum</title>
+  <meta name="description" content="Paste any recipe. Get an instant budget eating score. Cost per serving, nutrition per pound and difficulty rated and graded A to F." />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0a; --bg2: #111111; --bg3: #161616;
+      --border: #222222; --green: #4ade80;
+      --text: #f0f0f0; --muted: #888888;
+      --grade-a: #4ade80; --grade-b: #86efac;
+      --grade-c: #fbbf24; --grade-d: #fb923c; --grade-f: #f87171;
+    }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 16px; line-height: 1.6; overflow-x: hidden; min-height: 100vh; }
+    body::before { content: ''; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E"); pointer-events: none; z-index: 0; opacity: 0.4; }
+
+    nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 20px 48px; display: flex; justify-content: space-between; align-items: center; background: rgba(10,10,10,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); }
+    .nav-logo { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; color: var(--green); text-decoration: none; }
+    .nav-back { color: var(--muted); text-decoration: none; font-size: 14px; transition: color 0.2s; display: flex; align-items: center; gap: 6px; }
+    .nav-back:hover { color: var(--text); }
+
+    .page-wrap { max-width: 860px; margin: 0 auto; padding: 120px 48px 80px; position: relative; z-index: 1; }
+
+    .page-label { font-size: 12px; font-weight: 600; color: var(--green); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 16px; }
+    .page-title { font-family: 'Syne', sans-serif; font-size: clamp(32px, 4vw, 56px); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 12px; line-height: 1.05; }
+    .page-title em { font-style: normal; color: var(--green); }
+    .page-sub { color: var(--muted); font-size: 17px; line-height: 1.7; font-weight: 300; margin-bottom: 48px; max-width: 560px; }
+
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes gradeReveal { from { transform: scale(0.6) rotate(-8deg); opacity: 0; } to { transform: scale(1) rotate(0deg); opacity: 1; } }
+    @keyframes barGrow { from { width: 0; } }
+
+    .step { display: none; }
+    .step.active { display: block; animation: fadeUp 0.4s ease forwards; }
+
+    /* INPUT STEP */
+    .input-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 20px; padding: 40px; margin-bottom: 24px; }
+    .input-label { font-size: 12px; font-weight: 600; color: var(--green); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; display: block; }
+    .recipe-textarea { width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 15px; line-height: 1.7; resize: vertical; min-height: 280px; outline: none; transition: border-color 0.2s; font-weight: 300; }
+    .recipe-textarea::placeholder { color: var(--muted); }
+    .recipe-textarea:focus { border-color: rgba(74,222,128,0.4); }
+    .char-count { font-size: 12px; color: var(--muted); text-align: right; margin-top: 8px; }
+
+    .example-recipes { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 20px; }
+    .example-tag { background: var(--bg); border: 1px solid var(--border); border-radius: 100px; padding: 6px 14px; font-size: 13px; color: var(--muted); cursor: pointer; transition: all 0.2s; }
+    .example-tag:hover { border-color: var(--green); color: var(--green); }
+
+    .btn-primary { display: inline-flex; align-items: center; gap: 8px; background: var(--green); color: #0a0a0a; font-weight: 600; font-size: 15px; padding: 14px 28px; border-radius: 8px; border: none; cursor: pointer; transition: all 0.2s; font-family: 'DM Sans', sans-serif; }
+    .btn-primary:hover { background: #86efac; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .btn-secondary { display: inline-flex; align-items: center; gap: 8px; background: transparent; color: var(--text); font-weight: 500; font-size: 15px; padding: 14px 28px; border-radius: 8px; border: 1px solid var(--border); transition: all 0.2s; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+    .btn-secondary:hover { border-color: var(--green); color: var(--green); }
+    .btn-row { display: flex; gap: 12px; margin-top: 24px; flex-wrap: wrap; align-items: center; }
+
+    .disclaimer { font-size: 12px; color: var(--muted); margin-top: 16px; line-height: 1.5; }
+    .disclaimer strong { color: var(--text); font-weight: 500; }
+
+    /* LOADING */
+    .loading-state { text-align: center; padding: 80px 20px; }
+    .loading-spinner { width: 44px; height: 44px; border: 2px solid var(--border); border-top-color: var(--green); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 24px; }
+    .loading-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .loading-sub { color: var(--muted); font-size: 14px; }
+    .loading-steps { display: flex; flex-direction: column; gap: 10px; margin-top: 32px; max-width: 320px; margin-left: auto; margin-right: auto; }
+    .loading-step { display: flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); opacity: 0.4; transition: opacity 0.4s; }
+    .loading-step.done { opacity: 1; color: var(--green); }
+    .loading-step-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+
+    /* RESULTS */
+    .results-header { display: grid; grid-template-columns: 1fr auto; gap: 40px; align-items: start; margin-bottom: 32px; }
+    .results-recipe-name { font-family: 'Syne', sans-serif; font-size: clamp(24px, 3vw, 36px); font-weight: 800; letter-spacing: -0.03em; margin-bottom: 8px; }
+    .results-summary { color: var(--muted); font-size: 15px; line-height: 1.6; font-weight: 300; max-width: 500px; }
+
+    .grade-circle { width: 120px; height: 120px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; position: relative; animation: gradeReveal 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+    .grade-letter { font-family: 'Syne', sans-serif; font-size: 56px; font-weight: 800; line-height: 1; }
+    .grade-a { background: rgba(74,222,128,0.12); border: 2px solid var(--grade-a); }
+    .grade-a .grade-letter { color: var(--grade-a); }
+    .grade-b { background: rgba(134,239,172,0.1); border: 2px solid var(--grade-b); }
+    .grade-b .grade-letter { color: var(--grade-b); }
+    .grade-c { background: rgba(251,191,36,0.1); border: 2px solid var(--grade-c); }
+    .grade-c .grade-letter { color: var(--grade-c); }
+    .grade-d { background: rgba(251,146,60,0.1); border: 2px solid var(--grade-d); }
+    .grade-d .grade-letter { color: var(--grade-d); }
+    .grade-f { background: rgba(248,113,113,0.1); border: 2px solid var(--grade-f); }
+    .grade-f .grade-letter { color: var(--grade-f); }
+
+    .score-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+    .score-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 28px 24px; }
+    .score-card-label { font-size: 11px; font-weight: 600; color: var(--green); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 16px; }
+    .score-card-value { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; letter-spacing: -0.03em; line-height: 1; margin-bottom: 4px; }
+    .score-card-sub { font-size: 13px; color: var(--muted); margin-bottom: 16px; }
+    .score-bar-track { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+    .score-bar-fill { height: 100%; border-radius: 2px; animation: barGrow 0.8s ease forwards; }
+
+    .breakdown-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 20px; padding: 36px; margin-bottom: 24px; }
+    .breakdown-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 24px; }
+
+    .nutrition-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+    .nutrition-stat { background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 16px 12px; text-align: center; }
+    .nutrition-value { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; color: var(--green); letter-spacing: -0.02em; }
+    .nutrition-label { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .ingredient-list { display: flex; flex-direction: column; gap: 8px; }
+    .ingredient-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .ingredient-row:last-child { border-bottom: none; }
+    .ingredient-name { color: var(--muted); font-weight: 300; }
+    .ingredient-cost { color: var(--text); font-weight: 500; font-family: 'Syne', sans-serif; font-size: 13px; }
+
+    .difficulty-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .difficulty-pill { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; font-size: 13px; flex: 1; min-width: 120px; }
+    .difficulty-pill-label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+    .difficulty-pill-value { font-weight: 600; color: var(--text); }
+
+    .verdict-card { background: rgba(74,222,128,0.04); border: 1px solid rgba(74,222,128,0.15); border-radius: 20px; padding: 36px; margin-bottom: 24px; }
+    .verdict-label { font-size: 11px; font-weight: 600; color: var(--green); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; }
+    .verdict-text { font-size: 16px; line-height: 1.7; color: var(--muted); font-weight: 300; }
+    .verdict-text strong { color: var(--text); font-weight: 500; }
+
+    .improvements-list { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+    .improvement-item { display: flex; gap: 12px; align-items: flex-start; font-size: 14px; color: var(--muted); line-height: 1.5; font-weight: 300; }
+    .improvement-item::before { content: '→'; color: var(--green); flex-shrink: 0; font-weight: 600; margin-top: 1px; }
+
+    .share-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 24px; }
+    .share-label { font-size: 11px; font-weight: 600; color: var(--green); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 12px; }
+    .share-text { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px; font-size: 14px; color: var(--muted); line-height: 1.6; font-weight: 300; margin-bottom: 12px; }
+    .copy-btn { background: none; border: 1px solid var(--border); color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 8px 16px; border-radius: 6px; cursor: pointer; transition: all 0.2s; }
+    .copy-btn:hover { border-color: var(--green); color: var(--green); }
+
+    footer { padding: 40px 48px; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); position: relative; z-index: 1; margin-top: 40px; }
+    .footer-name { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; color: var(--muted); }
+    .footer-note { font-size: 13px; color: var(--muted); }
+    .footer-note a { color: var(--green); text-decoration: none; }
+
+    @media (max-width: 700px) {
+      nav { padding: 16px 24px; }
+      .page-wrap { padding: 100px 24px 60px; }
+      .results-header { grid-template-columns: 1fr; }
+      .grade-circle { width: 90px; height: 90px; }
+      .grade-letter { font-size: 40px; }
+      .score-cards { grid-template-columns: 1fr; }
+      .nutrition-grid { grid-template-columns: 1fr 1fr; }
+      footer { flex-direction: column; gap: 12px; text-align: center; padding: 32px 24px; }
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <a href="https://www.rayannakum.co.uk" class="nav-logo">RN</a>
+    <a href="https://www.rayannakum.co.uk/#systems" class="nav-back">← Back to systems</a>
+  </nav>
+
+  <div class="page-wrap">
+    <div class="page-label">System 3</div>
+    <h1 class="page-title">How good is your recipe <em>really?</em></h1>
+    <p class="page-sub">Paste any recipe. Get an instant budget eating score. Cost, nutrition and difficulty graded A to F using UK supermarket prices.</p>
+
+    <!-- STEP 1: INPUT -->
+    <div class="step active" id="step-input">
+      <div class="input-card">
+<label class="input-label" for="recipeInput">Paste a recipe or drop in a URL</label>
+<textarea class="recipe-textarea" id="recipeInput" placeholder="Paste the full recipe text, or just paste a URL from any recipe website. The AI will figure out the rest.
+
+Example URL: https://www.bbcgoodfood.com/recipes/spaghetti-bolognese
+Example recipe: Spaghetti Bolognese (serves 4), 500g beef mince..."></textarea>
+        <div class="char-count" id="charCount">0 characters</div>
+        <div style="margin-top: 16px;">
+          <div style="font-size: 12px; color: var(--muted); margin-bottom: 10px;">Try an example:</div>
+          <div class="example-recipes">
+            <div class="example-tag" data-recipe="egg-fried-rice">🍳 Egg fried rice</div>
+            <div class="example-tag" data-recipe="chicken-curry">🍛 Chicken curry</div>
+            <div class="example-tag" data-recipe="pasta-arrabbiata">🍝 Pasta arrabbiata</div>
+            <div class="example-tag" data-recipe="overnight-oats">🌾 Overnight oats</div>
+          </div>
+        </div>
+      </div>
+     <div style="background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 20px 24px; margin-bottom: 24px;">
+  <div style="font-size: 11px; font-weight: 600; color: var(--green); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 14px;">How grading works</div>
+  <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;">
+    <div style="text-align: center; padding: 10px 6px; background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.2); border-radius: 8px;">
+      <div style="font-family: Syne, sans-serif; font-size: 20px; font-weight: 800; color: #4ade80;">A</div>
+      <div style="font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.4;">Cheap, nutritious and easy</div>
+    </div>
+    <div style="text-align: center; padding: 10px 6px; background: rgba(134,239,172,0.06); border: 1px solid rgba(134,239,172,0.15); border-radius: 8px;">
+      <div style="font-family: Syne, sans-serif; font-size: 20px; font-weight: 800; color: #86efac;">B</div>
+      <div style="font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.4;">Strong on two of three</div>
+    </div>
+    <div style="text-align: center; padding: 10px 6px; background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2); border-radius: 8px;">
+      <div style="font-family: Syne, sans-serif; font-size: 20px; font-weight: 800; color: #fbbf24;">C</div>
+      <div style="font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.4;">Average across the board</div>
+    </div>
+    <div style="text-align: center; padding: 10px 6px; background: rgba(251,146,60,0.08); border: 1px solid rgba(251,146,60,0.2); border-radius: 8px;">
+      <div style="font-family: Syne, sans-serif; font-size: 20px; font-weight: 800; color: #fb923c;">D</div>
+      <div style="font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.4;">Expensive or poor nutrition</div>
+    </div>
+    <div style="text-align: center; padding: 10px 6px; background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.2); border-radius: 8px;">
+      <div style="font-family: Syne, sans-serif; font-size: 20px; font-weight: 800; color: #f87171;">F</div>
+      <div style="font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.4;">Fails on most counts</div>
+    </div>
+  </div>
+  <div style="font-size: 12px; color: var(--muted); margin-top: 12px;">Weighted: cost per serving 40% · nutrition per £1 35% · difficulty 25%</div>
+</div>
+<div class="btn-row">
+  <button class="btn-primary" id="scoreBtn" disabled>Score this recipe</button>
+</div>
+      <p class="disclaimer"><strong>Note:</strong> Costs are estimated using UK supermarket prices (Tesco, Aldi, Asda) and are accurate ballpark figures, not live prices.</p>
+    </div>
+
+    <!-- STEP 2: LOADING -->
+    <div class="step" id="step-loading">
+      <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <div class="loading-title">Scoring your recipe</div>
+        <div class="loading-sub">This takes about 10 seconds</div>
+        <div class="loading-steps">
+          <div class="loading-step" id="ls1"><span class="loading-step-dot"></span>Reading ingredients and method</div>
+          <div class="loading-step" id="ls2"><span class="loading-step-dot"></span>Pricing up at UK supermarkets</div>
+          <div class="loading-step" id="ls3"><span class="loading-step-dot"></span>Calculating nutrition per £1</div>
+          <div class="loading-step" id="ls4"><span class="loading-step-dot"></span>Judging difficulty</div>
+          <div class="loading-step" id="ls5"><span class="loading-step-dot"></span>Writing your verdict</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 3: RESULTS -->
+    <div class="step" id="step-results">
+
+      <div class="results-header">
+        <div>
+          <div class="page-label">Your result</div>
+          <div class="results-recipe-name" id="resRecipeName"></div>
+          <p class="results-summary" id="resSummary"></p>
+        </div>
+        <div class="grade-circle" id="gradeCircle">
+          <span class="grade-letter" id="gradeLetter"></span>
+        </div>
+      </div>
+
+      <div class="score-cards">
+        <div class="score-card">
+          <div class="score-card-label">Cost per serving</div>
+          <div class="score-card-value" id="resCostPerServing"></div>
+          <div class="score-card-sub" id="resTotalCost"></div>
+          <div class="score-bar-track"><div class="score-bar-fill" id="costBar" style="background: var(--green);"></div></div>
+        </div>
+        <div class="score-card">
+          <div class="score-card-label">Nutrition per £1</div>
+          <div class="score-card-value" id="resProteinPerGbp"></div>
+          <div class="score-card-sub">protein per pound spent</div>
+          <div class="score-bar-track"><div class="score-bar-fill" id="nutritionBar" style="background: var(--green);"></div></div>
+        </div>
+        <div class="score-card">
+          <div class="score-card-label">Difficulty</div>
+          <div class="score-card-value" id="resDifficulty"></div>
+          <div class="score-card-sub" id="resDifficultyTime"></div>
+          <div class="score-bar-track"><div class="score-bar-fill" id="difficultyBar" style="background: var(--green);"></div></div>
+        </div>
+      </div>
+
+      <div class="breakdown-card">
+        <div class="breakdown-title">Nutrition breakdown</div>
+        <div class="nutrition-grid">
+          <div class="nutrition-stat">
+            <div class="nutrition-value" id="resCalories"></div>
+            <div class="nutrition-label">Calories</div>
+          </div>
+          <div class="nutrition-stat">
+            <div class="nutrition-value" id="resProtein"></div>
+            <div class="nutrition-label">Protein</div>
+          </div>
+          <div class="nutrition-stat">
+            <div class="nutrition-value" id="resCarbs"></div>
+            <div class="nutrition-label">Carbs</div>
+          </div>
+          <div class="nutrition-stat">
+            <div class="nutrition-value" id="resFat"></div>
+            <div class="nutrition-label">Fat</div>
+          </div>
+        </div>
+        <div class="breakdown-title" style="margin-top: 24px;">Ingredient costs</div>
+        <div class="ingredient-list" id="ingredientList"></div>
+      </div>
+
+      <div class="breakdown-card">
+        <div class="breakdown-title">Difficulty breakdown</div>
+        <div class="difficulty-row" id="difficultyRow"></div>
+      </div>
+
+      <div class="verdict-card">
+        <div class="verdict-label">The verdict</div>
+        <div class="verdict-text" id="verdictText"></div>
+        <div class="improvements-list" id="improvementsList"></div>
+      </div>
+
+      <div class="share-card">
+        <div class="share-label">Share your score</div>
+        <div class="share-text" id="shareText"></div>
+        <button class="copy-btn" id="copyBtn">Copy to clipboard</button>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-primary" id="scoreAnotherBtn">Score another recipe</button>
+      </div>
+
+    </div>
+
+  </div>
+
+  <footer>
+    <span class="footer-name">Rayan Nakum</span>
+    <span class="footer-note">System 3 of 3 · <a href="https://www.rayannakum.co.uk/#systems">See all systems</a></span>
+  </footer>
+
+  <script>
+    const EXAMPLE_RECIPES = {
+      'egg-fried-rice': `Egg Fried Rice (serves 2)
+
+Ingredients:
+200g cooked long grain rice (leftover works best)
+3 large eggs
+1 tbsp vegetable oil
+2 spring onions, sliced
+2 tbsp soy sauce
+1 tsp sesame oil
+Pinch of white pepper
+
+Method:
+Heat oil in a wok over high heat. Add the rice and stir fry for 2 minutes. Push to the side, scramble the eggs in the pan, then mix together. Add soy sauce, sesame oil, spring onions and pepper. Toss everything together for 1 more minute and serve immediately.`,
+
+      'chicken-curry': `Easy Chicken Curry (serves 4)
+
+Ingredients:
+600g chicken thighs, diced
+1 large onion, diced
+3 garlic cloves, minced
+1 thumb ginger, grated
+400g tin chopped tomatoes
+400ml tin coconut milk
+2 tbsp curry powder
+1 tsp turmeric
+1 tbsp vegetable oil
+Salt to taste
+Rice to serve
+
+Method:
+Fry onion in oil for 8 minutes until soft. Add garlic and ginger, cook 2 minutes. Add curry powder and turmeric, stir for 1 minute. Add chicken and brown all over. Pour in tomatoes and coconut milk. Simmer 25 minutes until chicken is cooked through. Serve with rice.`,
+
+      'pasta-arrabbiata': `Pasta Arrabbiata (serves 2)
+
+Ingredients:
+200g penne pasta
+400g tin chopped tomatoes
+3 garlic cloves, sliced
+1 tsp dried chilli flakes
+2 tbsp olive oil
+Small bunch fresh parsley
+Salt and pepper
+
+Method:
+Cook pasta according to packet instructions. Meanwhile fry garlic in olive oil for 2 minutes, add chilli flakes for 30 seconds. Add tomatoes and simmer 10 minutes. Season well. Drain pasta, toss with sauce and top with parsley.`,
+
+      'overnight-oats': `Overnight Oats (serves 1)
+
+Ingredients:
+80g rolled oats
+200ml semi-skimmed milk
+1 tbsp honey
+1 tbsp peanut butter
+1 banana, sliced
+Small handful blueberries
+
+Method:
+Mix oats, milk and honey in a jar or bowl. Stir well, cover and refrigerate overnight. In the morning, top with peanut butter, banana and blueberries. Eat cold or microwave for 90 seconds.`
+    };
+
+    const textarea = document.getElementById('recipeInput');
+    const scoreBtn = document.getElementById('scoreBtn');
+    const charCount = document.getElementById('charCount');
+
+    textarea.addEventListener('input', () => {
+      const len = textarea.value.length;
+      charCount.textContent = len + ' characters';
+      scoreBtn.disabled = len < 50;
+    });
+
+    document.querySelectorAll('.example-tag').forEach(tag => {
+      tag.addEventListener('click', () => {
+        const recipe = EXAMPLE_RECIPES[tag.dataset.recipe];
+        if (recipe) {
+          textarea.value = recipe;
+          textarea.dispatchEvent(new Event('input'));
+        }
+      });
+    });
+
+    function showStep(id) {
+      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+   async function callClaude(userMessage, systemPrompt) {
+  const res = await fetch('/api/score', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      recipe: userMessage
+    })
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Something went wrong scoring your recipe. Please try again.');
+  return JSON.stringify(data);
+}
+    function parseJSON(raw) {
+  try {
+    const clean = raw.replace(/```json|```/g, '').trim();
+    return JSON.parse(clean);
+  } catch (e) {
+    console.log('Raw Claude response:', raw);
+    console.log('Parse error:', e);
+    return null;
+  }
+}
+    function animateLoadingSteps() {
+      const steps = ['ls1', 'ls2', 'ls3', 'ls4', 'ls5'];
+      steps.forEach((id, i) => {
+        setTimeout(() => {
+          document.getElementById(id).classList.add('done');
+        }, i * 1800);
+      });
+    }
+
+    scoreBtn.addEventListener('click', async () => {
+      const recipe = textarea.value.trim();
+      if (recipe.length < 50) return;
+
+      showStep('step-loading');
+      animateLoadingSteps();
+
+     try {
+  let recipeContent = recipe;
+
+  if (recipe.startsWith('http://') || recipe.startsWith('https://')) {
+    try {
+      const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(recipe);
+      const response = await fetch(proxyUrl);
+      const data = await response.json();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(data.contents, 'text/html');
+      doc.querySelectorAll('script, style, nav, footer, header, aside').forEach(el => el.remove());
+      const text = doc.body.innerText.slice(0, 4000).trim();
+      if (!text || text.length < 100) throw new Error('Blocked');
+      recipeContent = text;
+    } catch {
+      showStep('step-input');
+      const existing = document.getElementById('url-error-msg');
+      if (!existing) {
+        const msg = document.createElement('div');
+        msg.id = 'url-error-msg';
+        msg.style.cssText = 'background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.2); border-radius: 10px; padding: 14px 18px; font-size: 14px; color: #fbbf24; margin-bottom: 16px; line-height: 1.6;';
+        msg.innerHTML = '⚠️ That website blocked the request so the recipe could not be fetched. Try copying the recipe text from the page and pasting it in directly instead.';
+        const inputCard = document.querySelector('.input-card');
+        inputCard.insertAdjacentElement('afterend', msg);
+      }
+      return;
+    }
+  }
+
+  const raw = await callClaude(`Please score this recipe:\n\n${recipeContent}`);
+        const data = parseJSON(raw);
+        if (!data) throw new Error('Parse failed');
+        renderResults(data);
+        showStep('step-results');
+      } catch (err) {
+        alert(err.message && err.message !== 'Parse failed' ? err.message : 'Something went wrong scoring your recipe. Please try again.');
+        showStep('step-input');
+      }
+    });
+
+    function getGradeColor(grade) {
+      return { A: 'var(--grade-a)', B: 'var(--grade-b)', C: 'var(--grade-c)', D: 'var(--grade-d)', F: 'var(--grade-f)' }[grade] || 'var(--green)';
+    }
+
+    function renderResults(d) {
+      document.getElementById('resRecipeName').textContent = d.recipe_name;
+      document.getElementById('resSummary').textContent = d.summary;
+
+      const gradeCircle = document.getElementById('gradeCircle');
+      gradeCircle.className = 'grade-circle grade-' + d.overall_grade.toLowerCase();
+      document.getElementById('gradeLetter').textContent = d.overall_grade;
+
+      document.getElementById('resCostPerServing').textContent = '£' + d.cost_per_serving_gbp.toFixed(2);
+      document.getElementById('resTotalCost').textContent = 'Total recipe: £' + d.total_cost_gbp.toFixed(2);
+      document.getElementById('resProteinPerGbp').textContent = d.protein_per_gbp_g + 'g';
+      document.getElementById('resDifficulty').textContent = d.difficulty_label;
+      document.getElementById('resDifficultyTime').textContent = d.time_minutes + ' mins';
+
+      const color = getGradeColor(d.overall_grade);
+      setTimeout(() => {
+        document.getElementById('costBar').style.width = d.cost_score + '%';
+        document.getElementById('nutritionBar').style.width = d.nutrition_score + '%';
+        document.getElementById('difficultyBar').style.width = d.difficulty_score + '%';
+        document.getElementById('costBar').style.background = color;
+        document.getElementById('nutritionBar').style.background = color;
+        document.getElementById('difficultyBar').style.background = color;
+      }, 200);
+
+      document.getElementById('resCalories').textContent = d.calories_total;
+      document.getElementById('resProtein').textContent = d.protein_g_total + 'g';
+      document.getElementById('resCarbs').textContent = d.carbs_g_total + 'g';
+      document.getElementById('resFat').textContent = d.fat_g_total + 'g';
+
+      const ingList = document.getElementById('ingredientList');
+      ingList.innerHTML = d.ingredients.map(ing => `
+        <div class="ingredient-row">
+          <span class="ingredient-name">${ing.name}</span>
+          <span class="ingredient-cost">~£${ing.estimated_cost_gbp.toFixed(2)}</span>
+        </div>
+      `).join('');
+
+      document.getElementById('difficultyRow').innerHTML = `
+        <div class="difficulty-pill">
+          <div class="difficulty-pill-label">Skill level</div>
+          <div class="difficulty-pill-value">${d.skill_level}</div>
+        </div>
+        <div class="difficulty-pill">
+          <div class="difficulty-pill-label">Time needed</div>
+          <div class="difficulty-pill-value">${d.time_minutes} minutes</div>
+        </div>
+        <div class="difficulty-pill">
+          <div class="difficulty-pill-label">Number of steps</div>
+          <div class="difficulty-pill-value">${d.step_count} steps</div>
+        </div>
+      `;
+
+      document.getElementById('verdictText').textContent = d.verdict;
+      document.getElementById('improvementsList').innerHTML = d.improvements.map(imp =>
+        `<div class="improvement-item">${imp}</div>`
+      ).join('');
+
+      document.getElementById('shareText').textContent = d.share_text;
+    }
+
+    document.getElementById('copyBtn').addEventListener('click', () => {
+      const text = document.getElementById('shareText').textContent;
+      navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy to clipboard', 2000);
+      });
+    });
+
+    document.getElementById('scoreAnotherBtn').addEventListener('click', () => {
+      textarea.value = '';
+      charCount.textContent = '0 characters';
+      scoreBtn.disabled = true;
+      showStep('step-input');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fridge to Recipe</title>
+  <link rel="stylesheet" href="/fridge-to-recipe/style.css" />
+</head>
+<body>
+
+  <div class="noise"></div>
+  <div class="glow"></div>
+
+  <header>
+    <div class="logo">FRIDGE<span>→</span>RECIPE</div>
+    <a href="https://www.rayannakum.co.uk" class="back-link">← Back to rayannakum.co.uk</a>
+  </header>
+
+  <main>
+
+    <!-- Hero -->
+    <div class="hero">
+      <h1>Point your camera.<br><span class="green">Get a recipe.</span></h1>
+      <p class="hero-sub">Upload a photo of your fridge. AI identifies what you have and builds recipes around it.</p>
+    </div>
+
+    <!-- Notice -->
+    <div class="card notice-card">
+      <p class="notice-label">BEFORE YOU START</p>
+      <ul class="notice-list">
+        <li>Recipes are AI-generated. Always use your own judgement.</li>
+        <li>Make sure fridge items are clearly visible in your photo for the best results.</li>
+        <li>Always follow normal food safety and cooking guidelines.</li>
+      </ul>
+    </div>
+
+    <!-- Step 1: Upload -->
+    <section class="card" id="upload-section">
+      <p class="step-label">STEP 1</p>
+      <h2>Photo of your fridge</h2>
+      <p class="sub">Take or upload a clear photo. The more visible the better.</p>
+
+      <div class="drop-zone" id="drop-zone">
+        <input type="file" id="file-input" accept="image/*" hidden />
+        <input type="file" id="camera-input" accept="image/*" capture="environment" hidden />
+        <div class="drop-inner" id="drop-inner">
+          <div class="drop-icon">📷</div>
+          <p>Drag and drop a photo here</p>
+          <p class="or">or</p>
+          <div class="upload-btns">
+            <button class="btn-outline" onclick="document.getElementById('file-input').click()">Choose file</button>
+            <button class="btn-outline" onclick="document.getElementById('camera-input').click()">Take photo</button>
+          </div>
+        </div>
+        <img id="preview" alt="" style="display:none" />
+      </div>
+
+      <button class="btn-clear" id="clear-btn" style="display:none" onclick="clearImage()">Remove photo</button>
+    </section>
+
+    <!-- Step 2: Dietary restrictions -->
+    <section class="card" id="diet-section">
+      <p class="step-label">STEP 2</p>
+      <h2>Any dietary restrictions?</h2>
+      <p class="sub">Leave blank if none.</p>
+      <input
+        type="text"
+        id="diet-input"
+        placeholder="e.g. vegetarian, no nuts, gluten-free, dairy-free"
+      />
+    </section>
+
+    <!-- Analyse button -->
+    <button class="btn-primary" id="analyse-btn" disabled onclick="analyse()">
+      Analyse My Fridge
+    </button>
+
+    <!-- Loading state -->
+    <div class="loading" id="loading" style="display:none">
+      <div class="spinner"></div>
+      <p>Scanning your fridge...</p>
+    </div>
+
+    <!-- Results -->
+    <section id="results" style="display:none">
+
+      <div class="results-header">
+        <h2>What I found</h2>
+        <button class="btn-outline small" onclick="reset()">Start over</button>
+      </div>
+
+      <div class="ingredients-box">
+        <p class="section-label">INGREDIENTS SPOTTED</p>
+        <div id="ingredients-list" class="tags"></div>
+      </div>
+
+      <p class="section-label" style="margin-top: 2.5rem;">RECIPES FOR YOU</p>
+      <div id="recipes-list" class="recipes"></div>
+
+    </section>
+
+  </main>
+
+  <footer>
+    <p>Powered by Google Gemini &nbsp;·&nbsp; Built by <a href="https://www.rayannakum.co.uk" target="_blank">Rayan</a></p>
+  </footer>
+
+  <script src="/fridge-to-recipe/script.js"></script>
+</body>
+</html>
