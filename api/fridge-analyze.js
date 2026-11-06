@@ -73,7 +73,7 @@ module.exports = async function handler(req, res) {
 ${dietNote}
 
 Do the following:
-1. Identify every visible ingredient, food item, condiment, and drink.
+1. Identify every ingredient, food item, condiment, and drink that is actually visible in the photo. List only what you can see. Never add, guess or swap in items to match the dietary restrictions. If something visible does not fit the diet, still list it, but do not use it in any recipe.
 2. Suggest exactly 3 recipes that can be made primarily from those ingredients.
 3. For each recipe, provide detailed step-by-step cooking instructions.
 
